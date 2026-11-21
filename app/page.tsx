@@ -11,12 +11,12 @@ export default function Home() {
         Track your habits and tasks. Every check-in and every done task gives
         you XP. Keep your streaks and level up.
       </p>
-      {!hasEnvVars ? (
-        <EnvVarWarning />
-      ) : (
+      {hasEnvVars ? (
         <Suspense>
           <AuthButton />
         </Suspense>
+      ) : (
+        <EnvVarWarning />
       )}
     </main>
   );

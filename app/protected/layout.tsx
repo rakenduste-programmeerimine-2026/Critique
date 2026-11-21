@@ -22,12 +22,12 @@ export default function ProtectedLayout({
           </div>
           <div className="flex gap-3 items-center">
             <ThemeSwitcher />
-            {!hasEnvVars ? (
-              <EnvVarWarning />
-            ) : (
+            {hasEnvVars ? (
               <Suspense>
                 <AuthButton />
               </Suspense>
+            ) : (
+              <EnvVarWarning />
             )}
           </div>
         </div>
