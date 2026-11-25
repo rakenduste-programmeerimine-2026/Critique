@@ -6,14 +6,17 @@ create table public.habits (
   name text not null check (char_length(name) between 1 and 60),
   emoji text,
   created_at timestamptz not null default now(),
-  archived_at timestamptz
+  archived_at timestamptz,
+  unique (id, user_id)
 );
 
+-- The composite foreign key makes the check-in user the same as the habit owner.
 create table public.checkins (
-  habit_id uuid not null references public.habits on delete cascade,
+  habit_id uuid not null,
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
   day date not null,
-  primary key (habit_id, day)
+  primary key (habit_id, day),
+  foreign key (habit_id, user_id) references public.habits (id, user_id) on delete cascade
 );
 
 create index habits_user_id_idx on public.habits (user_id);
@@ -34,20 +37,16 @@ create policy "habits: owner can update" on public.habits
 create policy "habits: owner can delete" on public.habits
   for delete to authenticated using (user_id = (select auth.uid()));
 
--- A check-in must belong to the user and to a habit of the same user.
 create policy "checkins: owner can select" on public.checkins
   for select to authenticated using (user_id = (select auth.uid()));
 create policy "checkins: owner can insert" on public.checkins
-  for insert to authenticated with check (
-    user_id = (select auth.uid())
-    and exists (select 1 from public.habits h where h.id = habit_id and h.user_id = (select auth.uid()))
-  );
+  for insert to authenticated with check (user_id = (select auth.uid()));
 create policy "checkins: owner can update" on public.checkins
   for update to authenticated
   using (user_id = (select auth.uid()))
-  with check (
-    user_id = (select auth.uid())
-    and exists (select 1 from public.habits h where h.id = habit_id and h.user_id = (select auth.uid()))
-  );
+  with check (user_id = (select auth.uid()));
 create policy "checkins: owner can delete" on public.checkins
   for delete to authenticated using (user_id = (select auth.uid()));
+
+-- Hosted projects can turn off the default grants for new tables.
+grant select, insert, update, delete on public.habits, public.checkins to authenticated;

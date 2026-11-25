@@ -40,14 +40,18 @@ You need Node.js 24 or later, pnpm, and a Supabase account.
    ```
 
 4. In the Supabase dashboard, open **Project Settings → API**. Copy the project URL and the publishable key into `.env.local`.
-5. Run the SQL files in `supabase/migrations/` in name order. Use the Supabase SQL editor or `supabase db push`.
-6. Start the dev server:
+5. Run the SQL files in `supabase/migrations/` in name order. Use the Supabase SQL editor or `pnpm dlx supabase db push`.
+6. In the Supabase dashboard, set the auth settings. The hosted project does not read `supabase/config.toml`.
+   - **Authentication → Sign In / Providers → Email:** turn on **Confirm email**.
+   - **Authentication → URL Configuration:** set **Site URL** to the app URL. Add `http://localhost:3000/**` and `https://<app domain>/**` to **Redirect URLs**.
+   - **Authentication → Email Templates → Confirm signup:** copy the link from `supabase/templates/confirmation.html`. The page `/auth/confirm` needs `token_hash` and `type` in the link.
+7. Start the dev server:
 
    ```bash
    pnpm dev
    ```
 
-7. Open <http://localhost:3000>.
+8. Open <http://localhost:3000>.
 
 ### Local database (optional)
 

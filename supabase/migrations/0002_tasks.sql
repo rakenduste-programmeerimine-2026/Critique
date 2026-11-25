@@ -26,3 +26,6 @@ create policy "tasks: owner can update" on public.tasks
   with check (user_id = (select auth.uid()));
 create policy "tasks: owner can delete" on public.tasks
   for delete to authenticated using (user_id = (select auth.uid()));
+
+-- Hosted projects can turn off the default grants for new tables.
+grant select, insert, update, delete on public.tasks to authenticated;
