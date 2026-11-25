@@ -40,14 +40,52 @@ You need Node.js 24 or later, pnpm, and a Supabase account.
    ```
 
 4. In the Supabase dashboard, open **Project Settings → API**. Copy the project URL and the publishable key into `.env.local`.
-5. Run the SQL files in `supabase/migrations/` in name order. Use the Supabase SQL editor or `supabase db push`.
-6. Start the dev server:
+5. Run the SQL files in `supabase/migrations/` in name order. Use the Supabase SQL editor or `pnpm dlx supabase db push`.
+6. In the Supabase dashboard, set the auth settings. The hosted project does not read `supabase/config.toml`.
+   - **Authentication → Sign In / Providers → Email:** turn on **Confirm email**.
+   - **Authentication → URL Configuration:** set **Site URL** to the app URL. Add `http://localhost:3000/**` and `https://<app domain>/**` to **Redirect URLs**.
+   - **Authentication → Email Templates → Confirm signup:** copy the link from `supabase/templates/confirmation.html`. The page `/auth/confirm` needs `token_hash` and `type` in the link.
+7. Start the dev server:
 
    ```bash
    pnpm dev
    ```
 
-7. Open <http://localhost:3000>.
+8. Open <http://localhost:3000>.
+
+### Local database (optional)
+
+You can run Supabase on your computer instead of a hosted project. You need Docker. The settings are in `supabase/config.toml`.
+
+1. Start Supabase. This command also runs all migrations:
+
+   ```bash
+   pnpm dlx supabase start
+   ```
+
+2. Copy `API URL` and `Publishable key` from the output into `.env.local`.
+3. Open <http://127.0.0.1:54324> to read the confirmation emails (Mailpit).
+4. After you add or change a migration, reset the local database:
+
+   ```bash
+   pnpm dlx supabase db reset
+   ```
+
+5. Stop Supabase:
+
+   ```bash
+   pnpm dlx supabase stop
+   ```
+
+### Database tables
+
+| Table | What it holds |
+|---|---|
+| `habits` | The habits of a user. `archived_at` hides a habit and keeps its check-ins. |
+| `checkins` | One row for each habit and each done day. The key is `(habit_id, day)`. |
+| `tasks` | The to-do items. `status` is `todo`, `in_progress` or `done`. |
+
+Row Level Security is on for all tables. A user can read and change only their own rows.
 
 ## Scripts
 
