@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { completion, currentStreak, habitXp, level, shiftMonth, daysInMonth } from "./stats.ts";
+import { completion, currentStreak, habitXp, isDay, level, shiftMonth, daysInMonth } from "./stats.ts";
 
 test("completion counts days up to today", () => {
   assert.equal(completion(["2026-11-01", "2026-11-02", "2026-12-01"], "2026-11", "2026-11-04"), 50);
@@ -29,4 +29,13 @@ test("month helpers cross year boundaries", () => {
   assert.equal(shiftMonth("2026-01", -1), "2025-12");
   assert.equal(shiftMonth("2026-12", 1), "2027-01");
   assert.equal(daysInMonth("2028-02"), 29);
+});
+
+test("isDay accepts only real calendar days", () => {
+  assert.equal(isDay("2028-02-29"), true);
+  assert.equal(isDay("2026-02-29"), false);
+  assert.equal(isDay("2026-02-30"), false);
+  assert.equal(isDay("2026-13-40"), false);
+  assert.equal(isDay("2026-1-05"), false);
+  assert.equal(isDay(""), false);
 });
