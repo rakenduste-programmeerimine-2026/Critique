@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { shiftMonth } from "@/lib/stats";
@@ -17,19 +18,22 @@ async function load() {
   ]);
 }
 
-export default async function HabitsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ m?: string }>;
-}) {
+// With cacheComponents, searchParams and queries must be inside a <Suspense> of this page,
+// or Next.js blocks client navigation. The page is a shell, HabitsView reads the URL,
+// and Habits loads the data, so the header shows before the grid when the month changes.
+export default function HabitsPage({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
+  return (
+    <Suspense fallback={<p className="text-muted-foreground">Loading habits…</p>}>
+      <HabitsView searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function HabitsView({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
   const { m } = await searchParams;
   const today = new Date().toISOString().slice(0, 10); // UTC, same as toggleCheckin
   const thisMonth = today.slice(0, 7);
   const month = m && /^\d{4}-(0[1-9]|1[0-2])$/.test(m) && m <= thisMonth ? m : thisMonth;
-
-  const [habits, checkins] = hasEnvVars
-    ? await load()
-    : [{ data: demoHabits, error: null }, { data: demoCheckins(today), error: null }];
 
   const title = new Intl.DateTimeFormat("en", { month: "long", year: "numeric", timeZone: "UTC" }).format(
     new Date(`${month}-01`),
@@ -54,11 +58,21 @@ export default async function HabitsPage({
         </nav>
       </div>
       <AddHabitForm />
-      {habits.error || checkins.error ? (
-        <p role="alert" className="text-destructive">Could not load habits: {(habits.error ?? checkins.error)!.message}</p>
-      ) : (
-        <HabitGrid habits={habits.data} checkins={checkins.data} month={month} today={today} />
-      )}
+      <Suspense key={month} fallback={<p className="text-muted-foreground">Loading habits…</p>}>
+        <Habits month={month} today={today} />
+      </Suspense>
     </div>
+  );
+}
+
+async function Habits({ month, today }: { month: string; today: string }) {
+  const [habits, checkins] = hasEnvVars
+    ? await load()
+    : [{ data: demoHabits, error: null }, { data: demoCheckins(today), error: null }];
+
+  return habits.error || checkins.error ? (
+    <p role="alert" className="text-destructive">Could not load habits: {(habits.error ?? checkins.error)!.message}</p>
+  ) : (
+    <HabitGrid habits={habits.data} checkins={checkins.data} month={month} today={today} />
   );
 }
