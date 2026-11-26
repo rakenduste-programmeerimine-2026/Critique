@@ -40,7 +40,9 @@ You need Node.js 24 or later, pnpm, and a Supabase account.
    ```
 
 4. In the Supabase dashboard, open **Project Settings → API**. Copy the project URL and the publishable key into `.env.local`.
-5. Run the SQL files in `supabase/migrations/` in name order. Use the Supabase SQL editor or `pnpm dlx supabase db push`.
+5. Make the tables. In the Supabase dashboard, open **SQL Editor**. Paste `supabase/schema.sql` and click **Run**.
+   - Optional demo data: paste `supabase/seed.sql` and click **Run**. Then log in as `demo@critique.test` with the password `critique-demo`. Delete this user before real people use the app.
+   - With the CLI, `pnpm dlx supabase db push --remote` runs the files in `supabase/migrations/` instead. It does not add the demo data.
 6. In the Supabase dashboard, set the auth settings. The hosted project does not read `supabase/config.toml`.
    - **Authentication → Sign In / Providers → Email:** turn on **Confirm email**.
    - **Authentication → URL Configuration:** set **Site URL** to the app URL. Add `http://localhost:3000/**` and `https://<app domain>/**` to **Redirect URLs**.
@@ -57,7 +59,7 @@ You need Node.js 24 or later, pnpm, and a Supabase account.
 
 You can run Supabase on your computer instead of a hosted project. You need Docker. The settings are in `supabase/config.toml`.
 
-1. Start Supabase. This command also runs all migrations:
+1. Start Supabase. This command also runs all migrations and `supabase/seed.sql` (the demo user and demo data):
 
    ```bash
    pnpm dlx supabase start
