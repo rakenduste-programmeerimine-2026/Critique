@@ -17,6 +17,8 @@ async function signedIn() {
   return data?.claims ? supabase : null;
 }
 
+// RLS hides other users' rows, so a foreign id looks the same as a missing one.
+const NOT_FOUND = "Task not found.";
 const isStatus = (s: unknown): s is TaskStatus => STATUSES.some((x) => x.value === s);
 const done = () => revalidatePath("/protected", "layout"); // layout too, so the XP badge updates
 
@@ -72,12 +74,13 @@ export async function addTask(formData: FormData): Promise<Result> {
   if (title.length < 1 || title.length > 200) return { error: "Title must be 1–200 characters." };
   if (!isStatus(status)) return { error: "Bad status." };
 
-  const { data: last } = await supabase
+  const { data: last, error: lastError } = await supabase
     .from("tasks")
     .select("position")
     .eq("status", status)
     .order("position", { ascending: false })
     .limit(1);
+  if (lastError) return { error: lastError.message };
   const position = (last?.[0]?.position ?? -1) + 1;
   const { error } = await supabase.from("tasks").insert({
     title,
@@ -111,16 +114,18 @@ export async function updateTask(
       .from("tasks")
       .select("status")
       .eq("id", String(id))
-      .single();
+      .maybeSingle();
     if (error) return { error: error.message };
+    if (!current) return { error: NOT_FOUND };
     if (current.status !== patch.status) {
       update.status = patch.status;
       update.done_at = patch.status === "done" ? new Date().toISOString() : null;
     }
   }
   if (!Object.keys(update).length) return;
-  const { error } = await supabase.from("tasks").update(update).eq("id", String(id));
+  const { data, error } = await supabase.from("tasks").update(update).eq("id", String(id)).select("id");
   if (error) return { error: error.message };
+  if (!data.length) return { error: NOT_FOUND };
   done();
 }
 
