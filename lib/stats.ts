@@ -6,6 +6,12 @@ const toDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 export const addDays = (day: string, n: number) =>
   toDay(Date.parse(`${day}T00:00:00Z`) + n * DAY_MS);
 
+// A real calendar day. Date.parse rolls "2026-02-30" over to 2 March, so compare the round trip.
+export function isDay(day: string) {
+  const ms = Date.parse(`${day}T00:00:00Z`);
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) && !isNaN(ms) && toDay(ms) === day;
+}
+
 export function daysInMonth(month: string) {
   const [y, m] = month.split("-").map(Number);
   return new Date(Date.UTC(y, m, 0)).getUTCDate();

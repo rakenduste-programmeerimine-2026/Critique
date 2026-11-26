@@ -3,6 +3,7 @@
 // Server actions. Contract: docs/PLAN.md, "Server actions". RLS limits every query to the signed-in user.
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { isDay } from "@/lib/stats";
 import { STATUSES, type TaskStatus } from "@/lib/types";
 import { hasEnvVars } from "@/lib/utils";
 
@@ -46,7 +47,8 @@ export async function archiveHabit(id: string): Promise<Result> {
 export async function toggleCheckin(habitId: string, day: string): Promise<Result> {
   const supabase = await signedIn();
   if (!supabase) return { error: NO_USER };
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || isNaN(Date.parse(day))) return { error: "Bad day." };
+  day = String(day);
+  if (!isDay(day)) return { error: "Bad day." };
   // shortcut: "today" is UTC, so users far from UTC may see the day flip early or late; upgrade by passing the user's time zone.
   if (day > new Date().toISOString().slice(0, 10)) return { error: "You can't check in a future day." };
 
@@ -58,7 +60,10 @@ export async function toggleCheckin(habitId: string, day: string): Promise<Resul
     .select("day");
   if (error) return { error: error.message };
   if (!data.length) {
-    const { error } = await supabase.from("checkins").insert({ habit_id: String(habitId), day });
+    // ignoreDuplicates: a parallel toggle that already inserted the row is not an error.
+    const { error } = await supabase
+      .from("checkins")
+      .upsert({ habit_id: String(habitId), day }, { onConflict: "habit_id,day", ignoreDuplicates: true });
     if (error) return { error: error.message };
   }
   done();
